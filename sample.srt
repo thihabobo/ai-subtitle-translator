@@ -1,0 +1,19 @@
+1
+00:00:01,000 --> 00:00:04,200
+Hey, did you see the new AI models released yesterday?
+
+2
+00:00:04,300 --> 00:00:06,800
+Yeah! Gemma 2 is looking incredibly fast.
+
+3
+00:00:06,900 --> 00:00:09,500
+I want to use it to translate my video subtitles.
+
+4
+00:00:09,600 --> 00:00:11,900
+That's easy. We can build a web interface for it.
+
+5
+00:00:12,000 --> 00:00:15,000
+Exactly, and we can make the translations flow naturally in Myanmar.
