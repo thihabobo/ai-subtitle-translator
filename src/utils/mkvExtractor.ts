@@ -1,10 +1,6 @@
 /// <reference path="../mkv-subtitles.d.ts" />
-import * as MatroskaSubtitles from 'matroska-subtitles';
+import { SubtitleParser } from 'matroska-subtitles';
 import type { SubtitleBlock } from '../types';
-
-// Resolve UMD/CommonJS/ESM exports mismatch
-const MatroskaSubtitlesAny = MatroskaSubtitles as any;
-const SubtitleParserConstructor = MatroskaSubtitlesAny.SubtitleParser || MatroskaSubtitlesAny.default?.SubtitleParser || MatroskaSubtitlesAny;
 
 export interface MKVTrack {
   number: number;
@@ -19,7 +15,7 @@ export function extractSubtitlesFromMKV(
   onProgress: (percent: number) => void
 ): Promise<{ subtitleText: string; type: 'srt' | 'ass'; blocks: SubtitleBlock[] }> {
   return new Promise((resolve, reject) => {
-    const parser = new SubtitleParserConstructor();
+    const parser = new SubtitleParser();
     const tracks: MKVTrack[] = [];
     const subtitles: Array<{ text: string; time: number; duration: number }> = [];
     let selectedTrackNumber: number | null = null;
