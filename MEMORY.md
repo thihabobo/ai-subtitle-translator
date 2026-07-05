@@ -1,7 +1,7 @@
 # MEMORY
 
 * **2026-07-05**: Added browser-side MKV subtitle extraction feature.
-  * Installed `matroska-subtitles` library and configured Vite resolve alias for lightweight browser-safe execution.
+  * Installed `matroska-subtitles` library and `vite-plugin-node-polyfills` to resolve Vite dev server ES module export polyfills.
   * Added `src/utils/mkvExtractor.ts` using binary FileReader slicing to read large MKV files in 10MB chunks.
   * Implemented beautiful glassmorphic UI modals for subtitle track selection and extraction progress tracking.
   * Supported parsing of both SRT and ASS tracks embedded inside MKV containers, automatically loading them into the workspace.
