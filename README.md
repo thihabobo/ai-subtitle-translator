@@ -1,6 +1,6 @@
 # AI Subtitle Translator
 
-A premium, modern web application designed for context-aware translation of subtitle files (`.srt` and `.ass`) using both local Large Language Models (LLMs via Ollama) and cloud-based AI providers (Gemini API and OpenRouter).
+A premium, modern web application designed for context-aware translation of subtitle files (`.srt`, `.ass`) and video containers (`.mkv`) using both local Large Language Models (LLMs via Ollama) and cloud-based AI providers (Gemini API and OpenRouter).
 
 The application is built using **React, Vite, and strict TypeScript**, styled with custom **Vanilla CSS** following glassmorphism design principles.
 
@@ -8,8 +8,9 @@ The application is built using **React, Vite, and strict TypeScript**, styled wi
 
 ## 🌟 Key Features
 
-### 1. File Format Support (`.srt` & `.ass`)
-- **Subtitle Parsing & Preservation**: Fully parses SubRip (`.srt`) and Advanced SubStation Alpha (`.ass`) file formats.
+### 1. File Format Support (`.srt`, `.ass` & `.mkv`)
+- **Subtitle Parsing & Preservation**: Fully parses SubRip (`.srt`), Advanced SubStation Alpha (`.ass`), and embedded video containers (`.mkv`).
+- **Browser-Side MKV Extraction**: Upload `.mkv` video files directly. The client-side binary parser extracts embedded subtitle tracks in 10MB streaming chunks without uploading your video to any server. If multiple tracks are detected, an interactive modal allows you to choose your desired track.
 - **ASS Formatting & Style Preservation**: Dialogue lines are extracted dynamically while completely preserving headers, scripts info, comment blocks, styles, and other metadata. Styling overrides inside dialogue tags (e.g. `{\i1}`, `{\fade(200,200)}`, `{\pos(100,200)}`) are locked in place and translated in their relative positions.
 - **Project Save/Resume**: Export and import your ongoing translation workspaces as `.json` translation projects to preserve all timing, styles, settings, and progress.
 
@@ -57,7 +58,7 @@ Make sure you have [Node.js](https://nodejs.org/) (v18+) and npm installed.
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/ai-subtitle-translator.git
+   git clone https://github.com/thihabobo/ai-subtitle-translator.git
    cd ai-subtitle-translator
    ```
 2. Install dependencies:
