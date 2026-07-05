@@ -34,3 +34,4 @@ export interface TranslatorSettings {
   targetLanguage: string;
 }
 
+

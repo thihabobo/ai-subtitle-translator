@@ -3,6 +3,7 @@ import type { SubtitleBlock, TranslatorSettings, SpeakerProfile } from './types'
 import { parseSRT, compileSRT, parseASS, compileASS } from './utils/srtParser';
 import { translateBatch } from './utils/translationClient';
 import { analyzeFileContext } from './utils/contextAnalyzer';
+import { extractSubtitlesFromMKV } from './utils/mkvExtractor';
 
 export function getSystemPrompt(tone: string, targetLanguage: string): string {
   const isMyanmar = targetLanguage.toLowerCase() === 'myanmar' || targetLanguage.toLowerCase() === 'burmese';
@@ -222,6 +223,12 @@ export default function App() {
   const [isAnalyzingContext, setIsAnalyzingContext] = useState<boolean>(false);
   const [isFetchingModels, setIsFetchingModels] = useState<boolean>(false);
 
+  // MKV Subtitle Extraction States
+  const [mkvTracks, setMkvTracks] = useState<any[] | null>(null);
+  const [mkvExtracting, setMkvExtracting] = useState<boolean>(false);
+  const [mkvProgress, setMkvProgress] = useState<number>(0);
+  const onTracksSelectedResolveRef = useRef<((trackNumber: number) => void) | null>(null);
+
   const timerIntervalRef = useRef<any>(null);
 
   const startTimer = () => {
@@ -381,6 +388,60 @@ export default function App() {
     });
   };
 
+  const processMkvFile = async (file: File) => {
+    setMkvExtracting(true);
+    setMkvProgress(0);
+    setErrorMessage(null);
+
+    try {
+      const result = await extractSubtitlesFromMKV(
+        file,
+        (detectedTracks) => {
+          setMkvTracks(detectedTracks);
+          setMkvExtracting(false);
+          return new Promise<number>((resolve) => {
+            onTracksSelectedResolveRef.current = resolve;
+          });
+        },
+        (progress) => {
+          setMkvProgress(progress);
+        }
+      );
+
+      setMkvTracks(null);
+      setMkvExtracting(false);
+
+      const fileBaseName = file.name.replace(/\.mkv$/i, '');
+      const subtitleFileName = `${fileBaseName}.${result.type}`;
+      handleFileUpload(result.subtitleText, subtitleFileName);
+    } catch (err: any) {
+      setMkvTracks(null);
+      setMkvExtracting(false);
+      // If user cancelled, don't set error message
+      if (err.message !== 'cancelled' && err.message !== 'Track selection cancelled') {
+        setErrorMessage(err.message || 'Failed to extract subtitles from MKV.');
+      }
+    }
+  };
+
+  const cancelMkvSelection = () => {
+    setMkvTracks(null);
+    setMkvExtracting(false);
+    if (onTracksSelectedResolveRef.current) {
+      // Reject or cancel track selector promise
+      onTracksSelectedResolveRef.current(-1);
+      onTracksSelectedResolveRef.current = null;
+    }
+  };
+
+  const handleSelectMkvTrack = (trackNumber: number) => {
+    if (onTracksSelectedResolveRef.current) {
+      setMkvExtracting(true);
+      onTracksSelectedResolveRef.current(trackNumber);
+      onTracksSelectedResolveRef.current = null;
+    }
+  };
+
   const handleFileUpload = (content: string, name: string) => {
     try {
       if (name.endsWith('.json')) {
@@ -450,24 +511,32 @@ export default function App() {
     e.preventDefault();
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        if (text) handleFileUpload(text, file.name);
-      };
-      reader.readAsText(file);
+      if (file.name.toLowerCase().endsWith('.mkv')) {
+        processMkvFile(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result as string;
+          if (text) handleFileUpload(text, file.name);
+        };
+        reader.readAsText(file);
+      }
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const text = event.target?.result as string;
-        if (text) handleFileUpload(text, file.name);
-      };
-      reader.readAsText(file);
+      if (file.name.toLowerCase().endsWith('.mkv')) {
+        processMkvFile(file);
+      } else {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const text = event.target?.result as string;
+          if (text) handleFileUpload(text, file.name);
+        };
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -1485,14 +1554,14 @@ export default function App() {
               <input
                 id="file-input"
                 type="file"
-                accept=".srt,.ass,.json"
+                accept=".srt,.ass,.json,.mkv"
                 style={{ display: 'none' }}
                 onChange={handleFileInput}
               />
               <div className="upload-icon" style={{ fontSize: '3rem' }}>📂</div>
-              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Drag & Drop Subtitles or Project</h3>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 600, marginBottom: '0.5rem' }}>Drag & Drop Subtitles or Video</h3>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem', maxWidth: '380px', marginInline: 'auto' }}>
-                Select or drag a SubRip (.srt), Advanced SubStation Alpha (.ass), or a saved translation project (.json) from your local computer to start.
+                Select or drag a SubRip (.srt), Advanced SubStation Alpha (.ass), Video (.mkv), or a saved translation project (.json) from your local computer to start.
               </p>
               <button className="btn btn-secondary" onClick={(e) => { e.stopPropagation(); document.getElementById('file-input')?.click(); }}>
                 Browse Files
@@ -1500,7 +1569,7 @@ export default function App() {
             </div>
 
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginTop: '2rem' }}>
-              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No SRT files on hand?</span>
+              <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>No subtitle files on hand?</span>
               <button className="btn btn-secondary" style={{ padding: '0.45rem 1rem', fontSize: '0.8rem' }} onClick={loadSampleSRT}>
                 Load Sample Subtitles
               </button>
@@ -1604,6 +1673,113 @@ export default function App() {
           </>
         )}
       </main>
+
+      {/* MKV Subtitle Track Selection Modal */}
+      {mkvTracks && mkvTracks.length > 0 && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '480px',
+            padding: '2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem',
+            border: '1px solid rgba(255, 255, 255, 0.1)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5)'
+          }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--color-secondary)' }}>
+              Select Subtitle Track
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: '1.4' }}>
+              This MKV file contains multiple embedded subtitle tracks. Please select the track you want to extract and translate:
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', maxHeight: '200px', overflowY: 'auto', paddingRight: '0.25rem' }}>
+              {mkvTracks.map(track => (
+                <button
+                  key={track.number}
+                  className="btn btn-secondary"
+                  style={{
+                    justifyContent: 'flex-start',
+                    textAlign: 'left',
+                    padding: '0.75rem 1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    gap: '0.25rem',
+                    width: '100%'
+                  }}
+                  onClick={() => handleSelectMkvTrack(track.number)}
+                >
+                  <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+                    Track {track.number}: {track.name || 'Unnamed Track'}
+                  </span>
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                    Language: {track.language || 'Unknown'} | Format: {track.type ? track.type.toUpperCase() : 'Unknown'}
+                  </span>
+                </button>
+              ))}
+            </div>
+            
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button className="btn btn-secondary" onClick={cancelMkvSelection}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MKV Subtitle Extraction Progress Modal */}
+      {mkvExtracting && (
+        <div className="modal-overlay" style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.65)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div className="glass-panel" style={{
+            width: '100%',
+            maxWidth: '360px',
+            padding: '2.5rem 2rem',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '1.25rem',
+            textAlign: 'center',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+          }}>
+            <span className="spinner" style={{ width: '40px', height: '40px', borderWidth: '3px', borderColor: 'var(--color-secondary) transparent transparent transparent' }}></span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <h3 style={{ fontSize: '1.1rem', fontWeight: 600 }}>Extracting Subtitles...</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>Processing MKV file binary clusters</p>
+            </div>
+            <div style={{ width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.1)', height: '6px', borderRadius: '3px', overflow: 'hidden', marginTop: '0.5rem' }}>
+              <div style={{ width: `${mkvProgress}%`, backgroundColor: 'var(--color-secondary)', height: '100%', transition: 'width 0.1s ease', boxShadow: '0 0 10px var(--color-secondary)' }}></div>
+            </div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-primary)' }}>{mkvProgress}% Completed</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

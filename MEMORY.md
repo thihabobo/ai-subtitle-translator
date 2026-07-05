@@ -9,6 +9,7 @@
   * Dynamically updated export filenames based on the target language (e.g. `_spanish.srt` or `_myanmar.ass`).
   * Created a complete English `README.md` in the project root containing dynamic settings, setup guides, and Ollama/Gemini integration instructions.
   * Confirmed TypeScript compilation (`npx tsc --noEmit`) and verified prompt mappings using test scripts.
+  * Initialized local Git repository, created `main` branch, linked remote origin to `https://github.com/thihabobo/ai-subtitle-translator.git`, and created the initial commit.
 
 * **2026-06-30**: Implemented Pre-Translation Context Analysis and Dynamic Model Listing/Reloading.
   * Created `src/utils/contextAnalyzer.ts` helper to generate a global context summary.
