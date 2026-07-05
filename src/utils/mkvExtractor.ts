@@ -1,3 +1,4 @@
+/// <reference path="../mkv-subtitles.d.ts" />
 import * as MatroskaSubtitles from 'matroska-subtitles';
 import type { SubtitleBlock } from '../types';
 
