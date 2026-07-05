@@ -1,6 +1,12 @@
 # MEMORY
 
-## History of Actions (Newest first)
+* **2026-07-05**: Added browser-side MKV subtitle extraction feature.
+  * Installed `matroska-subtitles` library and configured Vite resolve alias for lightweight browser-safe execution.
+  * Added `src/utils/mkvExtractor.ts` using binary FileReader slicing to read large MKV files in 10MB chunks.
+  * Implemented beautiful glassmorphic UI modals for subtitle track selection and extraction progress tracking.
+  * Supported parsing of both SRT and ASS tracks embedded inside MKV containers, automatically loading them into the workspace.
+  * Committed and pushed to GitHub main branch.
+
 * **2026-07-04**: Added dynamic Target Language Selection and rebranded the app to "AI Subtitle Translator".
   * Added `targetLanguage: string` config to `TranslatorSettings` in `types.ts`.
   * Rebranded UI titles, headers, and window titles to "AI Subtitle Translator".
